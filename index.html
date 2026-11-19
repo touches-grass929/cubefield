@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cubefield Clone</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            user-select: none;
+        }
+        body {
+            background-color: #f4f4f4;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+        canvas {
+            display: block;
+            width: 100vw;
+            height: 100vh;
+        }
+        #ui-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 25px;
+        }
+        .hud {
+            display: flex;
+            justify-content: space-between;
+            font-size: 24px;
+            font-weight: 800;
+            color: #222;
+            letter-spacing: 1px;
+        }
+        #menu-screen {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            background: rgba(255, 255, 255, 0.92);
+            padding: 40px 60px;
+            border: 3px solid #222;
+            box-shadow: 10px 10px 0px #222;
+            pointer-events: auto;
+        }
+        h1 {
+            font-size: 48px;
+            letter-spacing: 4px;
+            margin-bottom: 10px;
+            color: #111;
+        }
+        p {
+            font-size: 16px;
+            color: #555;
+            margin-bottom: 25px;
+        }
+        button {
+            background: #ff4500;
+            color: white;
+            border: 2px solid #222;
+            padding: 12px 32px;
+            font-size: 20px;
+            font-weight: bold;
+            cursor: pointer;
+            letter-spacing: 1px;
+            transition: transform 0.1s, background 0.1s;
+        }
+        button:hover {
+            background: #e03d00;
+            transform: translate(-2px, -2px);
+            box-shadow: 4px 4px 0px #222;
+        }
+        button:active {
+            transform: translate(0, 0);
+            box-shadow: none;
+        }
+        .hidden {
+            display: none !important;
+        }
+    </style>
+</head>
+<body>
+
+    <canvas id="gameCanvas"></canvas>
+
+    <div id="ui-layer">
+        <div class="hud">
+            <div id="score-display">SCORE: 0</div>
+            <div id="high-score-display">BEST: 0</div>
+        </div>
+    </div>
+
+    <div id="menu-screen">
+        <h1 id="menu-title">CUBEFIELD</h1>
+        <p id="menu-subtitle">Use <strong>Left / Right Arrows</strong> or <strong>A / D</strong> to steer.</p>
+        <button id="start-btn">PLAY GAME</button>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const scoreDisplay = document.getElementById('score-display');
+        const highScoreDisplay = document.getElementById('high-score-display');
+        const menuScreen = document.getElementById('menu-screen');
+        const menuTitle = document.getElementById('menu-title');
+        const menuSubtitle = document.getElementById('menu-subtitle');
+        const startBtn = document.getElementById('start-btn');
+
+        // Resize canvas to fill window
+        function resize() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resize);
+        resize();
+
+        // Game state variables
+        let isPlaying = false;
+        let score = 0;
+        let highScore = localStorage.getItem('cubefield_highscore') || 0;
+        highScoreDisplay.textContent = `BEST: ${Math.floor(highScore)}`;
+
+        let playerX = 0;
+        let speed = 25;
+        let cubes = [];
+        let keys = { left: false, right: false };
+        let bankAngle = 0;
+
+        // 3D Projection Constants
+        const FOV = 350;
+        const HORIZON_RATIO = 0.38; // Where the horizon sits vertically
+        const SPAWN_Z = 2200;
+        const CUBE_SIZE = 45;
+        const CUBE_COLORS = ['#ff4500', '#ff8c00', '#ffd700', '#e63946'];
+
+        // Input Listeners
+        window.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') keys.left = true;
+            if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') keys.right = true;
+            if (!isPlaying && (e.key === 'Enter' || e.key === ' ')) startGame();
+        });
+
+        window.addEventListener('keyup', (e) => {
+            if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') keys.left = false;
+            if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') keys.right = false;
+        });
+
+        // Touch / Mouse Steering Support
+        window.addEventListener('touchstart', (e) => {
+            if (!isPlaying) return;
+            const touchX = e.touches[0].clientX;
+            if (touchX < window.innerWidth / 2) keys.left = true;
+            else keys.right = true;
+        });
+        window.addEventListener('touchend', () => {
+            keys.left = false;
+            keys.right = false;
+        });
+
+        startBtn.addEventListener('click', startGame);
+
+        function startGame() {
+            isPlaying = true;
+            score = 0;
+            playerX = 0;
+            speed = 28;
+            bankAngle = 0;
+            cubes = [];
+            menuScreen.classList.add('hidden');
+
+            // Pre-populate distant cubes so the field isn't empty at start
+            for (let z = 600; z < SPAWN_Z; z += 60) {
+                spawnCubeRow(z);
+            }
+            requestAnimationFrame(gameLoop);
+        }
+
+        function gameOver() {
+            isPlaying = false;
+            if (score > highScore) {
+                highScore = Math.floor(score);
+                localStorage.setItem('cubefield_highscore', highScore);
+                highScoreDisplay.textContent = `BEST: ${highScore}`;
+            }
+            menuTitle.textContent = "GAME OVER";
+            menuSubtitle.innerHTML = `Final Score: <strong>${Math.floor(score)}</strong>`;
+            startBtn.textContent = "PLAY AGAIN";
+            menuScreen.classList.remove('hidden');
+        }
+
+        function spawnCubeRow(zPos) {
+            // Spawn 2 to 4 cubes across a wide horizontal spread around the player
+            const count = Math.floor(Math.random() * 3) + 2;
+            for (let i = 0; i < count; i++) {
+                const spread = 2400;
+                const x = playerX + (Math.random() - 0.5) * spread;
+                const color = CUBE_COLORS[Math.floor(Math.random() * CUBE_COLORS.length)];
+                cubes.push({ x: x, z: zPos, color: color });
+            }
+        }
+
+        function update() {
+            // Increase difficulty gradually
+            speed += 0.012;
+            score += speed * 0.05;
+            scoreDisplay.textContent = `SCORE: ${Math.floor(score)}`;
+
+            // Player lateral movement & camera tilt (banking)
+            const moveSpeed = 16 + (speed * 0.15);
+            if (keys.left) {
+                playerX -= moveSpeed;
+                bankAngle = Math.max(bankAngle - 0.015, -0.12);
+            } else if (keys.right) {
+                playerX += moveSpeed;
+                bankAngle = Math.min(bankAngle + 0.015, 0.12);
+            } else {
+                bankAngle *= 0.85; // Return tilt to level
+            }
+
+            // Spawn new rows at the horizon
+            if (Math.random() < 0.45) {
+                spawnCubeRow(SPAWN_Z);
+            }
+
+            // Move cubes toward the camera and check collisions
+            for (let i = cubes.length - 1; i >= 0; i--) {
+                let c = cubes[i];
+                c.z -= speed;
+
+                // Collision Detection near the player's ship (z ~ 120)
+                if (c.z < 145 && c.z > 85) {
+                    if (Math.abs(c.x - playerX) < CUBE_SIZE * 0.75) {
+                        gameOver();
+                        return;
+                    }
+                }
+
+                // Remove cubes that have passed behind the camera
+                if (c.z <= 10) {
+                    cubes.splice(i, 1);
+                }
+            }
+        }
+
+        function draw() {
+            const w = canvas.width;
+            const h = canvas.height;
+            const horizonY = h * HORIZON_RATIO;
+
+            // Clear screen
+            ctx.fillStyle = '#f4f4f4';
+            ctx.fillRect(0, 0, w, h);
+
+            ctx.save();
+            // Apply subtle banking rotation around the player's position
+            ctx.translate(w / 2, h - 80);
+            ctx.rotate(bankAngle);
+            ctx.translate(-w / 2, -(h - 80));
+
+            // Draw Sky & Ground
+            ctx.fillStyle = '#e9ecef';
+            ctx.fillRect(-200, -200, w + 400, horizonY + 200);
+
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(-200, horizonY, w + 400, h - horizonY + 400);
+
+            // Horizon line
+            ctx.strokeStyle = '#ccc';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(-200, horizonY);
+            ctx.lineTo(w + 200, horizonY);
+            ctx.stroke();
+
+            // Sort cubes back-to-front (Painter's Algorithm) so closer cubes overlap distant ones
+            cubes.sort((a, b) => b.z - a.z);
+
+            // Render Cubes
+            for (let c of cubes) {
+                const scale = FOV / c.z;
+                const screenX = (w / 2) + (c.x - playerX) * scale;
+                const screenY = horizonY + (140 * scale);
+                const size = CUBE_SIZE * scale;
+
+                // Skip drawing if off-screen
+                if (screenX + size < -100 || screenX - size > w + 100) continue;
+
+                // Distance fog fade near horizon
+                const alpha = Math.min(1, (SPAWN_Z - c.z) / 500);
+                ctx.globalAlpha = Math.max(0, alpha);
+
+                // Cube Front Face
+                ctx.fillStyle = c.color;
+                ctx.fillRect(screenX - size / 2, screenY - size, size, size);
+
+                // Cube Outline
+                ctx.strokeStyle = '#222';
+                ctx.lineWidth = Math.max(1, 2 * scale);
+                ctx.strokeRect(screenX - size / 2, screenY - size, size, size);
+
+                // Subtle 3D Top Shading
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.25)';
+                ctx.fillRect(screenX - size / 2, screenY - size, size, size * 0.2);
+            }
+
+            ctx.globalAlpha = 1;
+            ctx.restore();
+
+            // Draw Player Ship (Triangle) at bottom center
+            const shipX = w / 2;
+            const shipY = h - 75;
+
+            ctx.save();
+            ctx.translate(shipX, shipY);
+            ctx.rotate(bankAngle * 1.5);
+
+            // Ship Shadow
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.15)';
+            ctx.beginPath();
+            ctx.moveTo(0, -15);
+            ctx.lineTo(-22, 24);
+            ctx.lineTo(22, 24);
+            ctx.closePath();
+            ctx.fill();
+
+            // Ship Body
+            ctx.fillStyle = '#222';
+            ctx.beginPath();
+            ctx.moveTo(0, -22);
+            ctx.lineTo(-18, 18);
+            ctx.lineTo(0, 10);
+            ctx.lineTo(18, 18);
+            ctx.closePath();
+            ctx.fill();
+
+            ctx.restore();
+        }
+
+        function gameLoop() {
+            if (!isPlaying) return;
+            update();
+            draw();
+            requestAnimationFrame(gameLoop);
+        }
+
+        // Initial background draw
+        draw();
+    </script>
+</body>
+</html>

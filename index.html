@@ -3,7 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cubefield Clone</title>
+    <title>CubeField 3D</title>
+    <link href="https://fonts.googleapis.com/css2?family=Lexend:wght@400;600;800&display=swap" rel="stylesheet">
     <style>
         * {
             margin: 0;
@@ -12,146 +13,297 @@
             user-select: none;
         }
         body {
-            background-color: #f4f4f4;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             overflow: hidden;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
+            background-color: #090a0f;
+            font-family: 'Lexend', sans-serif;
+            color: #ffffff;
         }
         canvas {
             display: block;
             width: 100vw;
             height: 100vh;
         }
-        #ui-layer {
+        #hud {
             position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
+            top: 28px;
+            left: 36px;
+            right: 36px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
             pointer-events: none;
+            z-index: 10;
+        }
+        .stat-box {
             display: flex;
             flex-direction: column;
-            justify-content: space-between;
-            padding: 25px;
         }
-        .hud {
-            display: flex;
-            justify-content: space-between;
-            font-size: 24px;
+        .stat-label {
+            font-size: 12px;
+            letter-spacing: 2px;
+            opacity: 0.65;
+            text-transform: uppercase;
+        }
+        .stat-value {
+            font-size: 32px;
             font-weight: 800;
-            color: #222;
             letter-spacing: 1px;
+            text-shadow: 0 2px 12px rgba(0, 0, 0, 0.35);
         }
-        #menu-screen {
+        #overlay {
             position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            text-align: center;
-            background: rgba(255, 255, 255, 0.92);
-            padding: 40px 60px;
-            border: 3px solid #222;
-            box-shadow: 10px 10px 0px #222;
-            pointer-events: auto;
+            inset: 0;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            background: rgba(9, 10, 15, 0.55);
+            backdrop-filter: blur(8px);
+            z-index: 20;
+            transition: opacity 0.3s ease;
+        }
+        #overlay.hidden {
+            opacity: 0;
+            pointer-events: none;
         }
         h1 {
-            font-size: 48px;
-            letter-spacing: 4px;
-            margin-bottom: 10px;
-            color: #111;
+            font-size: clamp(42px, 7vw, 76px);
+            font-weight: 800;
+            letter-spacing: 6px;
+            margin-bottom: 12px;
+            text-transform: uppercase;
+            background: linear-gradient(135deg, #ffffff 0%, #a5b4fc 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
         }
-        p {
+        #subtitle {
             font-size: 16px;
-            color: #555;
-            margin-bottom: 25px;
+            opacity: 0.85;
+            margin-bottom: 36px;
+            letter-spacing: 0.5px;
+            text-align: center;
+            padding: 0 20px;
         }
-        button {
-            background: #ff4500;
-            color: white;
-            border: 2px solid #222;
-            padding: 12px 32px;
-            font-size: 20px;
-            font-weight: bold;
+        #play-btn {
+            background: #ffffff;
+            color: #090a0f;
+            border: none;
+            padding: 16px 48px;
+            font-family: 'Lexend', sans-serif;
+            font-size: 18px;
+            font-weight: 800;
+            letter-spacing: 2px;
+            border-radius: 50px;
             cursor: pointer;
-            letter-spacing: 1px;
-            transition: transform 0.1s, background 0.1s;
+            box-shadow: 0 10px 30px rgba(255, 255, 255, 0.25);
+            transition: transform 0.15s ease, box-shadow 0.15s ease;
         }
-        button:hover {
-            background: #e03d00;
-            transform: translate(-2px, -2px);
-            box-shadow: 4px 4px 0px #222;
+        #play-btn:hover {
+            transform: translateY(-3px) scale(1.03);
+            box-shadow: 0 14px 36px rgba(255, 255, 255, 0.4);
         }
-        button:active {
-            transform: translate(0, 0);
-            box-shadow: none;
+        #play-btn:active {
+            transform: translateY(0);
         }
-        .hidden {
-            display: none !important;
+        .controls-hint {
+            position: absolute;
+            bottom: 28px;
+            font-size: 13px;
+            opacity: 0.6;
+            letter-spacing: 1.5px;
         }
     </style>
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+            }
+        }
+    </script>
 </head>
 <body>
 
-    <canvas id="gameCanvas"></canvas>
-
-    <div id="ui-layer">
-        <div class="hud">
-            <div id="score-display">SCORE: 0</div>
-            <div id="high-score-display">BEST: 0</div>
+    <div id="hud">
+        <div class="stat-box">
+            <span class="stat-label">Score</span>
+            <span class="stat-value" id="score">0</span>
+        </div>
+        <div class="stat-box" style="text-align: right;">
+            <span class="stat-label">Best</span>
+            <span class="stat-value" id="highscore">0</span>
         </div>
     </div>
 
-    <div id="menu-screen">
-        <h1 id="menu-title">CUBEFIELD</h1>
-        <p id="menu-subtitle">Use <strong>Left / Right Arrows</strong> or <strong>A / D</strong> to steer.</p>
-        <button id="start-btn">PLAY GAME</button>
+    <div id="overlay">
+        <h1 id="title">CUBEFIELD 3D</h1>
+        <p id="subtitle">Steer around the cubes as speed and themes evolve</p>
+        <button id="play-btn">PLAY</button>
+        <div class="controls-hint">A / D &nbsp;•&nbsp; LEFT / RIGHT ARROWS &nbsp;•&nbsp; TOUCH SIDES</div>
     </div>
 
-    <script>
-        const canvas = document.getElementById('gameCanvas');
-        const ctx = canvas.getContext('2d');
-        const scoreDisplay = document.getElementById('score-display');
-        const highScoreDisplay = document.getElementById('high-score-display');
-        const menuScreen = document.getElementById('menu-screen');
-        const menuTitle = document.getElementById('menu-title');
-        const menuSubtitle = document.getElementById('menu-subtitle');
-        const startBtn = document.getElementById('start-btn');
+    <script type="module">
+        import * as THREE from 'three';
+        import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+        import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+        import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 
-        // Resize canvas to fill window
-        function resize() {
-            canvas.width = window.innerWidth;
-            canvas.height = window.innerHeight;
+        // DOM Elements
+        const scoreEl = document.getElementById('score');
+        const highscoreEl = document.getElementById('highscore');
+        const overlay = document.getElementById('overlay');
+        const titleEl = document.getElementById('title');
+        const subtitleEl = document.getElementById('subtitle');
+        const playBtn = document.getElementById('play-btn');
+
+        // Color Themes (shifts every 500 points like the 3D edition)
+        const THEMES = [
+            { bg: 0xf0f2f5, fog: 0xf0f2f5, floor: 0xffffff, grid: 0xd1d5db, cubes: [0xff4500, 0xff7b00, 0xffb703], ship: 0x111827, bloom: 0.15, ui: '#111827' },
+            { bg: 0x090a0f, fog: 0x090a0f, floor: 0x0d1017, grid: 0x1e293b, cubes: [0x00f5d4, 0x00bbf9, 0xfee440], ship: 0xffffff, bloom: 0.75, ui: '#ffffff' },
+            { bg: 0x120422, fog: 0x120422, floor: 0x19062e, grid: 0x3b0764, cubes: [0xff007f, 0x7928ca, 0x00dfd8], ship: 0xffffff, bloom: 0.85, ui: '#ffffff' },
+            { bg: 0x0a0a0a, fog: 0x0a0a0a, floor: 0x111111, grid: 0x262626, cubes: [0xffffff, 0xa3a3a3, 0x525252], ship: 0xff3b30, bloom: 0.45, ui: '#ffffff' }
+        ];
+
+        // Scene, Camera, Renderer
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(THEMES[0].bg);
+        scene.fog = new THREE.FogExp2(THEMES[0].fog, 0.011);
+
+        const camera = new THREE.PerspectiveCamera(65, window.innerWidth / window.innerHeight, 0.1, 200);
+        camera.position.set(0, 3.2, 8);
+        camera.lookAt(0, 1, -20);
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        document.body.appendChild(renderer.domElement);
+
+        // Post-processing Bloom (Glow effect)
+        const composer = new EffectComposer(renderer);
+        const renderPass = new RenderPass(scene, camera);
+        composer.addPass(renderPass);
+
+        const bloomPass = new UnrealBloomPass(
+            new THREE.Vector2(window.innerWidth, window.innerHeight),
+            THEMES[0].bloom, // strength
+            0.4,             // radius
+            0.85             // threshold
+        );
+        composer.addPass(bloomPass);
+
+        // Lighting
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.75);
+        scene.add(ambientLight);
+
+        const dirLight = new THREE.DirectionalLight(0xffffff, 1.1);
+        dirLight.position.set(15, 30, 20);
+        scene.add(dirLight);
+
+        // Infinite Floor & Moving Grid
+        const floorGeo = new THREE.PlaneGeometry(400, 400);
+        const floorMat = new THREE.MeshStandardMaterial({ color: THEMES[0].floor, roughness: 0.8 });
+        const floor = new THREE.Mesh(floorGeo, floorMat);
+        floor.rotation.x = -Math.PI / 2;
+        scene.add(floor);
+
+        const gridHelper = new THREE.GridHelper(300, 75, THEMES[0].grid, THEMES[0].grid);
+        gridHelper.position.y = 0.02;
+        scene.add(gridHelper);
+
+        // Player 3D Sleek Ship
+        const shipGroup = new THREE.Group();
+        const shipGeo = new THREE.ConeGeometry(0.65, 2.2, 4);
+        shipGeo.rotateX(-Math.PI / 2);
+        shipGeo.scale(1.2, 0.45, 1);
+        const shipMat = new THREE.MeshStandardMaterial({ color: THEMES[0].ship, roughness: 0.3, metalness: 0.2 });
+        const shipMesh = new THREE.Mesh(shipGeo, shipMat);
+        shipGroup.add(shipMesh);
+        shipGroup.position.set(0, 0.55, 0);
+        scene.add(shipGroup);
+
+        // Obstacle Pool
+        const cubeGeo = new THREE.BoxGeometry(2.2, 2.2, 2.2);
+        const cubes = [];
+        const CUBE_COUNT = 130;
+        const SPAWN_DEPTH = 150;
+
+        for (let i = 0; i < CUBE_COUNT; i++) {
+            const mat = new THREE.MeshStandardMaterial({
+                color: THEMES[0].cubes[i % 3],
+                roughness: 0.25,
+                metalness: 0.1
+            });
+            const mesh = new THREE.Mesh(cubeGeo, mat);
+            mesh.position.set((Math.random() - 0.5) * 90, 1.1, -20 - Math.random() * SPAWN_DEPTH);
+            scene.add(mesh);
+            cubes.push(mesh);
         }
-        window.addEventListener('resize', resize);
-        resize();
 
-        // Game state variables
+        // Game State
         let isPlaying = false;
         let score = 0;
-        let highScore = localStorage.getItem('cubefield_highscore') || 0;
-        highScoreDisplay.textContent = `BEST: ${Math.floor(highScore)}`;
+        let highScore = Number(localStorage.getItem('cubefield3d_best')) || 0;
+        highscoreEl.textContent = Math.floor(highScore);
 
-        let playerX = 0;
-        let speed = 25;
-        let cubes = [];
-        let keys = { left: false, right: false };
-        let bankAngle = 0;
+        let speed = 38;
+        let lateralVelocity = 0;
+        let currentThemeIndex = 0;
+        const keys = { left: false, right: false };
 
-        // 3D Projection Constants
-        const FOV = 350;
-        const HORIZON_RATIO = 0.38; // Where the horizon sits vertically
-        const SPAWN_Z = 2200;
-        const CUBE_SIZE = 45;
-        const CUBE_COLORS = ['#ff4500', '#ff8c00', '#ffd700', '#e63946'];
+        function applyTheme(index) {
+            const t = THEMES[index % THEMES.length];
+            scene.background.setHex(t.bg);
+            scene.fog.color.setHex(t.fog);
+            floorMat.color.setHex(t.floor);
+            gridHelper.material.color.setHex(t.grid);
+            shipMat.color.setHex(t.ship);
+            bloomPass.strength = t.bloom;
+            document.getElementById('hud').style.color = t.ui;
 
-        // Input Listeners
+            cubes.forEach((cube, idx) => {
+                cube.material.color.setHex(t.cubes[idx % t.cubes.length]);
+            });
+        }
+
+        function resetGame() {
+            score = 0;
+            speed = 40;
+            lateralVelocity = 0;
+            currentThemeIndex = 0;
+            applyTheme(0);
+
+            shipGroup.position.x = 0;
+            shipGroup.rotation.z = 0;
+            camera.position.x = 0;
+            camera.rotation.z = 0;
+
+            cubes.forEach((cube) => {
+                cube.position.x = (Math.random() - 0.5) * 95;
+                cube.position.z = -35 - Math.random() * SPAWN_DEPTH;
+            });
+
+            isPlaying = true;
+            overlay.classList.add('hidden');
+        }
+
+        function triggerGameOver() {
+            isPlaying = false;
+            if (score > highScore) {
+                highScore = Math.floor(score);
+                localStorage.setItem('cubefield3d_best', highScore);
+                highscoreEl.textContent = highScore;
+            }
+            titleEl.textContent = 'CRASHED';
+            subtitleEl.innerHTML = `Final Score: <strong>${Math.floor(score)}</strong>`;
+            playBtn.textContent = 'PLAY AGAIN';
+            overlay.classList.remove('hidden');
+        }
+
+        // Controls
         window.addEventListener('keydown', (e) => {
             if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') keys.left = true;
             if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') keys.right = true;
-            if (!isPlaying && (e.key === 'Enter' || e.key === ' ')) startGame();
+            if (!isPlaying && (e.key === 'Enter' || e.key === ' ')) resetGame();
         });
 
         window.addEventListener('keyup', (e) => {
@@ -159,206 +311,101 @@
             if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') keys.right = false;
         });
 
-        // Touch / Mouse Steering Support
         window.addEventListener('touchstart', (e) => {
             if (!isPlaying) return;
-            const touchX = e.touches[0].clientX;
-            if (touchX < window.innerWidth / 2) keys.left = true;
+            const x = e.touches[0].clientX;
+            if (x < window.innerWidth / 2) keys.left = true;
             else keys.right = true;
         });
+
         window.addEventListener('touchend', () => {
             keys.left = false;
             keys.right = false;
         });
 
-        startBtn.addEventListener('click', startGame);
+        playBtn.addEventListener('click', resetGame);
 
-        function startGame() {
-            isPlaying = true;
-            score = 0;
-            playerX = 0;
-            speed = 28;
-            bankAngle = 0;
-            cubes = [];
-            menuScreen.classList.add('hidden');
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            composer.setSize(window.innerWidth, window.innerHeight);
+        });
 
-            // Pre-populate distant cubes so the field isn't empty at start
-            for (let z = 600; z < SPAWN_Z; z += 60) {
-                spawnCubeRow(z);
-            }
-            requestAnimationFrame(gameLoop);
-        }
+        // Main Animation Loop
+        const clock = new THREE.Clock();
+        applyTheme(0);
 
-        function gameOver() {
-            isPlaying = false;
-            if (score > highScore) {
-                highScore = Math.floor(score);
-                localStorage.setItem('cubefield_highscore', highScore);
-                highScoreDisplay.textContent = `BEST: ${highScore}`;
-            }
-            menuTitle.textContent = "GAME OVER";
-            menuSubtitle.innerHTML = `Final Score: <strong>${Math.floor(score)}</strong>`;
-            startBtn.textContent = "PLAY AGAIN";
-            menuScreen.classList.remove('hidden');
-        }
+        function animate() {
+            requestAnimationFrame(animate);
+            const delta = Math.min(clock.getDelta(), 0.05);
 
-        function spawnCubeRow(zPos) {
-            // Spawn 2 to 4 cubes across a wide horizontal spread around the player
-            const count = Math.floor(Math.random() * 3) + 2;
-            for (let i = 0; i < count; i++) {
-                const spread = 2400;
-                const x = playerX + (Math.random() - 0.5) * spread;
-                const color = CUBE_COLORS[Math.floor(Math.random() * CUBE_COLORS.length)];
-                cubes.push({ x: x, z: zPos, color: color });
-            }
-        }
+            if (isPlaying) {
+                // Accelerate & Update Score
+                speed += delta * 1.15;
+                score += speed * delta * 0.65;
+                scoreEl.textContent = Math.floor(score);
 
-        function update() {
-            // Increase difficulty gradually
-            speed += 0.012;
-            score += speed * 0.05;
-            scoreDisplay.textContent = `SCORE: ${Math.floor(score)}`;
+                // Shift color theme every 500 points
+                const targetTheme = Math.floor(score / 500);
+                if (targetTheme !== currentThemeIndex) {
+                    currentThemeIndex = targetTheme;
+                    applyTheme(currentThemeIndex);
+                }
 
-            // Player lateral movement & camera tilt (banking)
-            const moveSpeed = 16 + (speed * 0.15);
-            if (keys.left) {
-                playerX -= moveSpeed;
-                bankAngle = Math.max(bankAngle - 0.015, -0.12);
-            } else if (keys.right) {
-                playerX += moveSpeed;
-                bankAngle = Math.min(bankAngle + 0.015, 0.12);
-            } else {
-                bankAngle *= 0.85; // Return tilt to level
-            }
+                // Smooth Steering & Banking Tilt
+                const steerAccel = 135;
+                if (keys.left) lateralVelocity -= steerAccel * delta;
+                if (keys.right) lateralVelocity += steerAccel * delta;
+                lateralVelocity *= Math.pow(0.04, delta); // Smooth damping
 
-            // Spawn new rows at the horizon
-            if (Math.random() < 0.45) {
-                spawnCubeRow(SPAWN_Z);
-            }
+                shipGroup.position.x += lateralVelocity * delta;
+                gridHelper.position.x = Math.round(shipGroup.position.x / 4) * 4;
+                floor.position.x = shipGroup.position.x;
 
-            // Move cubes toward the camera and check collisions
-            for (let i = cubes.length - 1; i >= 0; i--) {
-                let c = cubes[i];
-                c.z -= speed;
+                // Scroll Grid Forward
+                gridHelper.position.z = (gridHelper.position.z + speed * delta) % 4;
 
-                // Collision Detection near the player's ship (z ~ 120)
-                if (c.z < 145 && c.z > 85) {
-                    if (Math.abs(c.x - playerX) < CUBE_SIZE * 0.75) {
-                        gameOver();
-                        return;
+                // Camera & Ship Tilt
+                const targetRoll = -lateralVelocity * 0.014;
+                shipGroup.rotation.z += (targetRoll - shipGroup.rotation.z) * 12 * delta;
+                camera.position.x += (shipGroup.position.x - camera.position.x) * 10 * delta;
+                camera.rotation.z = shipGroup.rotation.z * 0.45;
+
+                // Move Cubes & Check Collisions
+                for (let i = 0; i < cubes.length; i++) {
+                    const cube = cubes[i];
+                    cube.position.z += speed * delta;
+
+                    // Recycle cube to horizon once it passes the camera
+                    if (cube.position.z > 10) {
+                        cube.position.z = -SPAWN_DEPTH - Math.random() * 20;
+                        cube.position.x = shipGroup.position.x + (Math.random() - 0.5) * 95;
+                    }
+
+                    // 3D Bounding Box Collision Check
+                    const dz = Math.abs(cube.position.z - shipGroup.position.z);
+                    const dx = Math.abs(cube.position.x - shipGroup.position.x);
+                    if (dz < 1.55 && dx < 1.35) {
+                        triggerGameOver();
+                        break;
                     }
                 }
-
-                // Remove cubes that have passed behind the camera
-                if (c.z <= 10) {
-                    cubes.splice(i, 1);
+            } else {
+                // Idle background flyover on title screen
+                gridHelper.position.z = (gridHelper.position.z + 18 * delta) % 4;
+                for (let i = 0; i < cubes.length; i++) {
+                    cubes[i].position.z += 18 * delta;
+                    if (cubes[i].position.z > 10) {
+                        cubes[i].position.z = -SPAWN_DEPTH;
+                    }
                 }
             }
+
+            composer.render();
         }
 
-        function draw() {
-            const w = canvas.width;
-            const h = canvas.height;
-            const horizonY = h * HORIZON_RATIO;
-
-            // Clear screen
-            ctx.fillStyle = '#f4f4f4';
-            ctx.fillRect(0, 0, w, h);
-
-            ctx.save();
-            // Apply subtle banking rotation around the player's position
-            ctx.translate(w / 2, h - 80);
-            ctx.rotate(bankAngle);
-            ctx.translate(-w / 2, -(h - 80));
-
-            // Draw Sky & Ground
-            ctx.fillStyle = '#e9ecef';
-            ctx.fillRect(-200, -200, w + 400, horizonY + 200);
-
-            ctx.fillStyle = '#ffffff';
-            ctx.fillRect(-200, horizonY, w + 400, h - horizonY + 400);
-
-            // Horizon line
-            ctx.strokeStyle = '#ccc';
-            ctx.lineWidth = 2;
-            ctx.beginPath();
-            ctx.moveTo(-200, horizonY);
-            ctx.lineTo(w + 200, horizonY);
-            ctx.stroke();
-
-            // Sort cubes back-to-front (Painter's Algorithm) so closer cubes overlap distant ones
-            cubes.sort((a, b) => b.z - a.z);
-
-            // Render Cubes
-            for (let c of cubes) {
-                const scale = FOV / c.z;
-                const screenX = (w / 2) + (c.x - playerX) * scale;
-                const screenY = horizonY + (140 * scale);
-                const size = CUBE_SIZE * scale;
-
-                // Skip drawing if off-screen
-                if (screenX + size < -100 || screenX - size > w + 100) continue;
-
-                // Distance fog fade near horizon
-                const alpha = Math.min(1, (SPAWN_Z - c.z) / 500);
-                ctx.globalAlpha = Math.max(0, alpha);
-
-                // Cube Front Face
-                ctx.fillStyle = c.color;
-                ctx.fillRect(screenX - size / 2, screenY - size, size, size);
-
-                // Cube Outline
-                ctx.strokeStyle = '#222';
-                ctx.lineWidth = Math.max(1, 2 * scale);
-                ctx.strokeRect(screenX - size / 2, screenY - size, size, size);
-
-                // Subtle 3D Top Shading
-                ctx.fillStyle = 'rgba(255, 255, 255, 0.25)';
-                ctx.fillRect(screenX - size / 2, screenY - size, size, size * 0.2);
-            }
-
-            ctx.globalAlpha = 1;
-            ctx.restore();
-
-            // Draw Player Ship (Triangle) at bottom center
-            const shipX = w / 2;
-            const shipY = h - 75;
-
-            ctx.save();
-            ctx.translate(shipX, shipY);
-            ctx.rotate(bankAngle * 1.5);
-
-            // Ship Shadow
-            ctx.fillStyle = 'rgba(0, 0, 0, 0.15)';
-            ctx.beginPath();
-            ctx.moveTo(0, -15);
-            ctx.lineTo(-22, 24);
-            ctx.lineTo(22, 24);
-            ctx.closePath();
-            ctx.fill();
-
-            // Ship Body
-            ctx.fillStyle = '#222';
-            ctx.beginPath();
-            ctx.moveTo(0, -22);
-            ctx.lineTo(-18, 18);
-            ctx.lineTo(0, 10);
-            ctx.lineTo(18, 18);
-            ctx.closePath();
-            ctx.fill();
-
-            ctx.restore();
-        }
-
-        function gameLoop() {
-            if (!isPlaying) return;
-            update();
-            draw();
-            requestAnimationFrame(gameLoop);
-        }
-
-        // Initial background draw
-        draw();
+        animate();
     </script>
 </body>
 </html>

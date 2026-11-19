@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CubeField 3D</title>
-    <link href="https://fonts.googleapis.com/css2?family=Lexend:wght@400;600;800&display=swap" rel="stylesheet">
+    <title>Cubefield 3D</title>
+    <link href="https://fonts.googleapis.com/css2?family=Lexend:wght@500;700;800&display=swap" rel="stylesheet">
     <style>
         * {
             margin: 0;
@@ -14,9 +14,9 @@
         }
         body {
             overflow: hidden;
-            background-color: #090a0f;
+            background-color: #e6e6e6;
             font-family: 'Lexend', sans-serif;
-            color: #ffffff;
+            transition: background-color 0.4s ease;
         }
         canvas {
             display: block;
@@ -25,30 +25,49 @@
         }
         #hud {
             position: absolute;
-            top: 28px;
-            left: 36px;
-            right: 36px;
+            top: 24px;
+            left: 32px;
+            right: 32px;
             display: flex;
             justify-content: space-between;
-            align-items: center;
+            align-items: flex-start;
             pointer-events: none;
             z-index: 10;
+            color: #222222;
+            transition: color 0.4s ease;
+        }
+        .stat-group {
+            display: flex;
+            gap: 36px;
         }
         .stat-box {
             display: flex;
             flex-direction: column;
         }
         .stat-label {
-            font-size: 12px;
+            font-size: 11px;
+            font-weight: 700;
             letter-spacing: 2px;
-            opacity: 0.65;
+            opacity: 0.6;
             text-transform: uppercase;
         }
         .stat-value {
-            font-size: 32px;
+            font-size: 30px;
             font-weight: 800;
-            letter-spacing: 1px;
-            text-shadow: 0 2px 12px rgba(0, 0, 0, 0.35);
+            letter-spacing: 0.5px;
+        }
+        #level-banner {
+            position: absolute;
+            top: 22%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 36px;
+            font-weight: 800;
+            letter-spacing: 4px;
+            opacity: 0;
+            pointer-events: none;
+            z-index: 15;
+            transition: opacity 0.35s ease;
         }
         #overlay {
             position: absolute;
@@ -57,67 +76,64 @@
             flex-direction: column;
             justify-content: center;
             align-items: center;
-            background: rgba(9, 10, 15, 0.55);
-            backdrop-filter: blur(8px);
+            background: rgba(235, 235, 235, 0.72);
+            backdrop-filter: blur(6px);
             z-index: 20;
-            transition: opacity 0.3s ease;
+            color: #111111;
+            transition: opacity 0.25s ease;
         }
         #overlay.hidden {
             opacity: 0;
             pointer-events: none;
         }
         h1 {
-            font-size: clamp(42px, 7vw, 76px);
+            font-size: clamp(44px, 7vw, 72px);
             font-weight: 800;
             letter-spacing: 6px;
-            margin-bottom: 12px;
+            margin-bottom: 10px;
             text-transform: uppercase;
-            background: linear-gradient(135deg, #ffffff 0%, #a5b4fc 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
         }
         #subtitle {
             font-size: 16px;
-            opacity: 0.85;
-            margin-bottom: 36px;
-            letter-spacing: 0.5px;
+            opacity: 0.8;
+            margin-bottom: 32px;
             text-align: center;
             padding: 0 20px;
         }
         #play-btn {
-            background: #ffffff;
-            color: #090a0f;
-            border: none;
-            padding: 16px 48px;
+            background: #ff4500;
+            color: #ffffff;
+            border: 2px solid #111111;
+            padding: 14px 46px;
             font-family: 'Lexend', sans-serif;
             font-size: 18px;
             font-weight: 800;
             letter-spacing: 2px;
-            border-radius: 50px;
             cursor: pointer;
-            box-shadow: 0 10px 30px rgba(255, 255, 255, 0.25);
-            transition: transform 0.15s ease, box-shadow 0.15s ease;
+            box-shadow: 5px 5px 0px #111111;
+            transition: transform 0.1s ease, box-shadow 0.1s ease;
         }
         #play-btn:hover {
-            transform: translateY(-3px) scale(1.03);
-            box-shadow: 0 14px 36px rgba(255, 255, 255, 0.4);
+            transform: translate(-2px, -2px);
+            box-shadow: 7px 7px 0px #111111;
         }
         #play-btn:active {
-            transform: translateY(0);
+            transform: translate(2px, 2px);
+            box-shadow: 2px 2px 0px #111111;
         }
         .controls-hint {
             position: absolute;
-            bottom: 28px;
-            font-size: 13px;
-            opacity: 0.6;
+            bottom: 26px;
+            font-size: 12px;
+            font-weight: 700;
+            opacity: 0.65;
             letter-spacing: 1.5px;
         }
     </style>
     <script type="importmap">
         {
             "imports": {
-                "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
-                "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+                "three": "https://unpkg.com/three@0.160.0/build/three.module.js"
             }
         }
     </script>
@@ -125,9 +141,15 @@
 <body>
 
     <div id="hud">
-        <div class="stat-box">
-            <span class="stat-label">Score</span>
-            <span class="stat-value" id="score">0</span>
+        <div class="stat-group">
+            <div class="stat-box">
+                <span class="stat-label">Score</span>
+                <span class="stat-value" id="score">0</span>
+            </div>
+            <div class="stat-box">
+                <span class="stat-label">Level</span>
+                <span class="stat-value" id="level">1</span>
+            </div>
         </div>
         <div class="stat-box" style="text-align: right;">
             <span class="stat-label">Best</span>
@@ -135,175 +157,239 @@
         </div>
     </div>
 
+    <div id="level-banner">LEVEL 2</div>
+
     <div id="overlay">
-        <h1 id="title">CUBEFIELD 3D</h1>
-        <p id="subtitle">Steer around the cubes as speed and themes evolve</p>
+        <h1 id="title">CUBEFIELD</h1>
+        <p id="subtitle">Dodge the cubes • New level every 1,000 points</p>
         <button id="play-btn">PLAY</button>
-        <div class="controls-hint">A / D &nbsp;•&nbsp; LEFT / RIGHT ARROWS &nbsp;•&nbsp; TOUCH SIDES</div>
+        <div class="controls-hint">LEFT / RIGHT ARROWS &nbsp;•&nbsp; A / D &nbsp;•&nbsp; TOUCH SIDES</div>
     </div>
 
     <script type="module">
         import * as THREE from 'three';
-        import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
-        import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
-        import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 
         // DOM Elements
         const scoreEl = document.getElementById('score');
+        const levelEl = document.getElementById('level');
         const highscoreEl = document.getElementById('highscore');
+        const levelBanner = document.getElementById('level-banner');
         const overlay = document.getElementById('overlay');
         const titleEl = document.getElementById('title');
         const subtitleEl = document.getElementById('subtitle');
         const playBtn = document.getElementById('play-btn');
+        const hudEl = document.getElementById('hud');
 
-        // Color Themes (shifts every 500 points like the 3D edition)
-        const THEMES = [
-            { bg: 0xf0f2f5, fog: 0xf0f2f5, floor: 0xffffff, grid: 0xd1d5db, cubes: [0xff4500, 0xff7b00, 0xffb703], ship: 0x111827, bloom: 0.15, ui: '#111827' },
-            { bg: 0x090a0f, fog: 0x090a0f, floor: 0x0d1017, grid: 0x1e293b, cubes: [0x00f5d4, 0x00bbf9, 0xfee440], ship: 0xffffff, bloom: 0.75, ui: '#ffffff' },
-            { bg: 0x120422, fog: 0x120422, floor: 0x19062e, grid: 0x3b0764, cubes: [0xff007f, 0x7928ca, 0x00dfd8], ship: 0xffffff, bloom: 0.85, ui: '#ffffff' },
-            { bg: 0x0a0a0a, fog: 0x0a0a0a, floor: 0x111111, grid: 0x262626, cubes: [0xffffff, 0xa3a3a3, 0x525252], ship: 0xff3b30, bloom: 0.45, ui: '#ffffff' }
+        // Authentic Cubefield Level Palettes (Changes every 1,000 points)
+        const LEVELS = [
+            // Level 1 (0 - 999): Classic Light Gray Sky, White Floor, Yellow/Orange/Red Cubes
+            {
+                sky: 0xdcdcdc,
+                floor: 0xf4f4f4,
+                cubes: [0xffcc00, 0xff6600, 0xe62e00],
+                edge: 0x222222,
+                ship: 0x1a1a1a,
+                ui: '#1a1a1a'
+            },
+            // Level 2 (1000 - 1999): Dark Night Mode, Neon Lime Green Cubes
+            {
+                sky: 0x050505,
+                floor: 0x0a0a0a,
+                cubes: [0x39ff14, 0x00e600, 0x7fff00],
+                edge: 0x003300,
+                ship: 0xffffff,
+                ui: '#39ff14'
+            },
+            // Level 3 (2000 - 2999): Stark White Out, Pitch Black Cubes
+            {
+                sky: 0xffffff,
+                floor: 0xf8f8f8,
+                cubes: [0x111111, 0x262626, 0x000000],
+                edge: 0x555555,
+                ship: 0xff2a00,
+                ui: '#111111'
+            },
+            // Level 4 (3000 - 3999): Crimson Red Alert, Dark Cubes
+            {
+                sky: 0x1a0000,
+                floor: 0x240000,
+                cubes: [0xff1e1e, 0xcc0000, 0xff5500],
+                edge: 0x000000,
+                ship: 0xffffff,
+                ui: '#ff3333'
+            },
+            // Level 5 (4000+): Classic Ice Cyan & Blue
+            {
+                sky: 0x0b192c,
+                floor: 0x102542,
+                cubes: [0x00f0ff, 0x0099ff, 0x70f8ff],
+                edge: 0x040d1a,
+                ship: 0xffcc00,
+                ui: '#00f0ff'
+            }
         ];
 
-        // Scene, Camera, Renderer
+        // Scene & Camera Setup
         const scene = new THREE.Scene();
-        scene.background = new THREE.Color(THEMES[0].bg);
-        scene.fog = new THREE.FogExp2(THEMES[0].fog, 0.011);
+        scene.background = new THREE.Color(LEVELS[0].sky);
+        scene.fog = new THREE.Fog(LEVELS[0].sky, 45, 145);
 
-        const camera = new THREE.PerspectiveCamera(65, window.innerWidth / window.innerHeight, 0.1, 200);
-        camera.position.set(0, 3.2, 8);
-        camera.lookAt(0, 1, -20);
+        const camera = new THREE.PerspectiveCamera(62, window.innerWidth / window.innerHeight, 0.1, 160);
+        camera.position.set(0, 2.7, 7.5);
+        camera.lookAt(0, 1.0, -25);
 
         const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
         renderer.setSize(window.innerWidth, window.innerHeight);
         renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
         document.body.appendChild(renderer.domElement);
 
-        // Post-processing Bloom (Glow effect)
-        const composer = new EffectComposer(renderer);
-        const renderPass = new RenderPass(scene, camera);
-        composer.addPass(renderPass);
-
-        const bloomPass = new UnrealBloomPass(
-            new THREE.Vector2(window.innerWidth, window.innerHeight),
-            THEMES[0].bloom, // strength
-            0.4,             // radius
-            0.85             // threshold
-        );
-        composer.addPass(bloomPass);
-
         // Lighting
-        const ambientLight = new THREE.AmbientLight(0xffffff, 0.75);
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.85);
         scene.add(ambientLight);
 
-        const dirLight = new THREE.DirectionalLight(0xffffff, 1.1);
-        dirLight.position.set(15, 30, 20);
+        const dirLight = new THREE.DirectionalLight(0xffffff, 0.9);
+        dirLight.position.set(20, 40, 25);
         scene.add(dirLight);
 
-        // Infinite Floor & Moving Grid
-        const floorGeo = new THREE.PlaneGeometry(400, 400);
-        const floorMat = new THREE.MeshStandardMaterial({ color: THEMES[0].floor, roughness: 0.8 });
+        // Infinite Ground Plane
+        const floorGeo = new THREE.PlaneGeometry(800, 800);
+        const floorMat = new THREE.MeshLambertMaterial({ color: LEVELS[0].floor });
         const floor = new THREE.Mesh(floorGeo, floorMat);
         floor.rotation.x = -Math.PI / 2;
         scene.add(floor);
 
-        const gridHelper = new THREE.GridHelper(300, 75, THEMES[0].grid, THEMES[0].grid);
-        gridHelper.position.y = 0.02;
-        scene.add(gridHelper);
-
-        // Player 3D Sleek Ship
+        // Sleek Classic Triangle Pointer (Ship)
         const shipGroup = new THREE.Group();
-        const shipGeo = new THREE.ConeGeometry(0.65, 2.2, 4);
-        shipGeo.rotateX(-Math.PI / 2);
-        shipGeo.scale(1.2, 0.45, 1);
-        const shipMat = new THREE.MeshStandardMaterial({ color: THEMES[0].ship, roughness: 0.3, metalness: 0.2 });
-        const shipMesh = new THREE.Mesh(shipGeo, shipMat);
+        const shipShape = new THREE.BufferGeometry();
+        const vertices = new Float32Array([
+             0.0, 0.18, -1.35,  // Nose
+            -0.65, 0.08, 0.75,  // Left wing
+             0.65, 0.08, 0.75,  // Right wing
+             0.0, 0.35,  0.35   // Top ridge
+        ]);
+        const indices = [
+            0, 1, 3,
+            0, 3, 2,
+            1, 2, 3,
+            0, 2, 1
+        ];
+        shipShape.setAttribute('position', new THREE.BufferAttribute(vertices, 3));
+        shipShape.setIndex(indices);
+        shipShape.computeVertexNormals();
+
+        const shipMat = new THREE.MeshLambertMaterial({ color: LEVELS[0].ship });
+        const shipMesh = new THREE.Mesh(shipShape, shipMat);
         shipGroup.add(shipMesh);
-        shipGroup.position.set(0, 0.55, 0);
+        shipGroup.position.set(0, 0.15, 0);
         scene.add(shipGroup);
 
-        // Obstacle Pool
-        const cubeGeo = new THREE.BoxGeometry(2.2, 2.2, 2.2);
+        // Dense Cube Field Pool (Wide spawn so spamming Left/Right never escapes cubes)
+        const CUBE_SIZE = 2.1;
+        const cubeGeo = new THREE.BoxGeometry(CUBE_SIZE, CUBE_SIZE, CUBE_SIZE);
+        const edgesGeo = new THREE.EdgesGeometry(cubeGeo);
+
         const cubes = [];
-        const CUBE_COUNT = 130;
-        const SPAWN_DEPTH = 150;
+        const CUBE_COUNT = 240;      // High density across wide field
+        const SPAWN_WIDTH = 160;     // Very wide lateral field centered on player
+        const SPAWN_DEPTH = 145;     // Horizon spawn distance
 
         for (let i = 0; i < CUBE_COUNT; i++) {
-            const mat = new THREE.MeshStandardMaterial({
-                color: THEMES[0].cubes[i % 3],
-                roughness: 0.25,
-                metalness: 0.1
-            });
+            const mat = new THREE.MeshLambertMaterial({ color: LEVELS[0].cubes[i % 3] });
             const mesh = new THREE.Mesh(cubeGeo, mat);
-            mesh.position.set((Math.random() - 0.5) * 90, 1.1, -20 - Math.random() * SPAWN_DEPTH);
+
+            const lineMat = new THREE.LineBasicMaterial({ color: LEVELS[0].edge });
+            const wireframe = new THREE.LineSegments(edgesGeo, lineMat);
+            mesh.add(wireframe);
+
+            mesh.position.set(
+                (Math.random() - 0.5) * SPAWN_WIDTH,
+                CUBE_SIZE / 2,
+                -25 - Math.random() * SPAWN_DEPTH
+            );
             scene.add(mesh);
-            cubes.push(mesh);
+            cubes.push({ mesh, lineMat });
         }
 
         // Game State
         let isPlaying = false;
         let score = 0;
-        let highScore = Number(localStorage.getItem('cubefield3d_best')) || 0;
+        let currentLevel = 1;
+        let highScore = Number(localStorage.getItem('cubefield_classic_best')) || 0;
         highscoreEl.textContent = Math.floor(highScore);
 
-        let speed = 38;
-        let lateralVelocity = 0;
-        let currentThemeIndex = 0;
+        let forwardSpeed = 46;
+        let currentSteerSpeed = 0;
         const keys = { left: false, right: false };
+        let bannerTimeout = null;
 
-        function applyTheme(index) {
-            const t = THEMES[index % THEMES.length];
-            scene.background.setHex(t.bg);
-            scene.fog.color.setHex(t.fog);
-            floorMat.color.setHex(t.floor);
-            gridHelper.material.color.setHex(t.grid);
-            shipMat.color.setHex(t.ship);
-            bloomPass.strength = t.bloom;
-            document.getElementById('hud').style.color = t.ui;
+        function applyLevelTheme(lvl, showBanner = false) {
+            const palette = LEVELS[(lvl - 1) % LEVELS.length];
+            scene.background.setHex(palette.sky);
+            scene.fog.color.setHex(palette.sky);
+            floorMat.color.setHex(palette.floor);
+            shipMat.color.setHex(palette.ship);
+            hudEl.style.color = palette.ui;
+            levelBanner.style.color = palette.ui;
 
-            cubes.forEach((cube, idx) => {
-                cube.material.color.setHex(t.cubes[idx % t.cubes.length]);
+            cubes.forEach((item, idx) => {
+                item.mesh.material.color.setHex(palette.cubes[idx % palette.cubes.length]);
+                item.lineMat.color.setHex(palette.edge);
             });
+
+            if (showBanner) {
+                levelBanner.textContent = `LEVEL ${lvl}`;
+                levelBanner.style.opacity = '1';
+                clearTimeout(bannerTimeout);
+                bannerTimeout = setTimeout(() => {
+                    levelBanner.style.opacity = '0';
+                }, 1400);
+            }
         }
 
-        function resetGame() {
+        function startGame() {
             score = 0;
-            speed = 40;
-            lateralVelocity = 0;
-            currentThemeIndex = 0;
-            applyTheme(0);
+            currentLevel = 1;
+            forwardSpeed = 46;
+            currentSteerSpeed = 0;
+
+            scoreEl.textContent = '0';
+            levelEl.textContent = '1';
+            applyLevelTheme(1, false);
 
             shipGroup.position.x = 0;
             shipGroup.rotation.z = 0;
             camera.position.x = 0;
             camera.rotation.z = 0;
+            floor.position.x = 0;
 
-            cubes.forEach((cube) => {
-                cube.position.x = (Math.random() - 0.5) * 95;
-                cube.position.z = -35 - Math.random() * SPAWN_DEPTH;
+            // Reset cubes well ahead of player
+            cubes.forEach((item) => {
+                item.mesh.position.x = (Math.random() - 0.5) * SPAWN_WIDTH;
+                item.mesh.position.z = -35 - Math.random() * SPAWN_DEPTH;
             });
 
             isPlaying = true;
             overlay.classList.add('hidden');
         }
 
-        function triggerGameOver() {
+        function gameOver() {
             isPlaying = false;
             if (score > highScore) {
                 highScore = Math.floor(score);
-                localStorage.setItem('cubefield3d_best', highScore);
+                localStorage.setItem('cubefield_classic_best', highScore);
                 highscoreEl.textContent = highScore;
             }
-            titleEl.textContent = 'CRASHED';
-            subtitleEl.innerHTML = `Final Score: <strong>${Math.floor(score)}</strong>`;
-            playBtn.textContent = 'PLAY AGAIN';
+            titleEl.textContent = 'GAME OVER';
+            subtitleEl.innerHTML = `Score: <strong>${Math.floor(score)}</strong> &nbsp;•&nbsp; Reached <strong>Level ${currentLevel}</strong>`;
+            playBtn.textContent = 'TRY AGAIN';
             overlay.classList.remove('hidden');
         }
 
-        // Controls
+        // Responsive Input Listeners
         window.addEventListener('keydown', (e) => {
             if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') keys.left = true;
             if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') keys.right = true;
-            if (!isPlaying && (e.key === 'Enter' || e.key === ' ')) resetGame();
+            if (!isPlaying && (e.key === 'Enter' || e.key === ' ')) startGame();
         });
 
         window.addEventListener('keyup', (e) => {
@@ -323,86 +409,91 @@
             keys.right = false;
         });
 
-        playBtn.addEventListener('click', resetGame);
+        playBtn.addEventListener('click', startGame);
 
         window.addEventListener('resize', () => {
             camera.aspect = window.innerWidth / window.innerHeight;
             camera.updateProjectionMatrix();
             renderer.setSize(window.innerWidth, window.innerHeight);
-            composer.setSize(window.innerWidth, window.innerHeight);
         });
 
-        // Main Animation Loop
+        // Main Game Loop
         const clock = new THREE.Clock();
-        applyTheme(0);
+        applyLevelTheme(1, false);
 
         function animate() {
             requestAnimationFrame(animate);
             const delta = Math.min(clock.getDelta(), 0.05);
 
             if (isPlaying) {
-                // Accelerate & Update Score
-                speed += delta * 1.15;
-                score += speed * delta * 0.65;
-                scoreEl.textContent = Math.floor(score);
+                // Score & Speed Progression (100 points per ~1.5 seconds)
+                forwardSpeed += delta * 1.35;
+                score += forwardSpeed * delta * 1.45;
+                const displayScore = Math.floor(score);
+                scoreEl.textContent = displayScore;
 
-                // Shift color theme every 500 points
-                const targetTheme = Math.floor(score / 500);
-                if (targetTheme !== currentThemeIndex) {
-                    currentThemeIndex = targetTheme;
-                    applyTheme(currentThemeIndex);
+                // Level Up Every 1,000 Points
+                const calculatedLevel = Math.floor(displayScore / 1000) + 1;
+                if (calculatedLevel > currentLevel) {
+                    currentLevel = calculatedLevel;
+                    levelEl.textContent = currentLevel;
+                    forwardSpeed += 4; // Noticeable speed bump on new level
+                    applyLevelTheme(currentLevel, true);
                 }
 
-                // Smooth Steering & Banking Tilt
-                const steerAccel = 135;
-                if (keys.left) lateralVelocity -= steerAccel * delta;
-                if (keys.right) lateralVelocity += steerAccel * delta;
-                lateralVelocity *= Math.pow(0.04, delta); // Smooth damping
+                // Instant, Snappy Steering (No sluggish drift)
+                const maxSteer = 42 + (currentLevel * 2.5);
+                let targetSteer = 0;
+                if (keys.left) targetSteer -= maxSteer;
+                if (keys.right) targetSteer += maxSteer;
 
-                shipGroup.position.x += lateralVelocity * delta;
-                gridHelper.position.x = Math.round(shipGroup.position.x / 4) * 4;
+                // Ultra-fast response (snaps immediately when key is pressed or released)
+                currentSteerSpeed += (targetSteer - currentSteerSpeed) * Math.min(1, delta * 28);
+                shipGroup.position.x += currentSteerSpeed * delta;
                 floor.position.x = shipGroup.position.x;
 
-                // Scroll Grid Forward
-                gridHelper.position.z = (gridHelper.position.z + speed * delta) % 4;
+                // Crisp Ship & Camera Banking
+                const targetBank = -(currentSteerSpeed / maxSteer) * 0.42;
+                shipGroup.rotation.z += (targetBank - shipGroup.rotation.z) * Math.min(1, delta * 22);
+                camera.position.x = shipGroup.position.x;
+                camera.rotation.z = shipGroup.rotation.z * 0.35;
 
-                // Camera & Ship Tilt
-                const targetRoll = -lateralVelocity * 0.014;
-                shipGroup.rotation.z += (targetRoll - shipGroup.rotation.z) * 12 * delta;
-                camera.position.x += (shipGroup.position.x - camera.position.x) * 10 * delta;
-                camera.rotation.z = shipGroup.rotation.z * 0.45;
+                // Move Cubes & Recycle Relative to Player's Future Path
+                // Lead offset ensures even if you hold Left/Right nonstop, cubes spawn directly ahead of your turn
+                const pathLeadOffset = currentSteerSpeed * 1.4;
 
-                // Move Cubes & Check Collisions
                 for (let i = 0; i < cubes.length; i++) {
-                    const cube = cubes[i];
-                    cube.position.z += speed * delta;
+                    const cube = cubes[i].mesh;
+                    cube.position.z += forwardSpeed * delta;
 
-                    // Recycle cube to horizon once it passes the camera
-                    if (cube.position.z > 10) {
-                        cube.position.z = -SPAWN_DEPTH - Math.random() * 20;
-                        cube.position.x = shipGroup.position.x + (Math.random() - 0.5) * 95;
+                    // Recycle passed cubes or cubes that drifted too far sideways
+                    if (cube.position.z > 9 || Math.abs(cube.position.x - shipGroup.position.x) > SPAWN_WIDTH * 0.65) {
+                        cube.position.z = -SPAWN_DEPTH - Math.random() * 25;
+                        cube.position.x = shipGroup.position.x + pathLeadOffset + (Math.random() - 0.5) * SPAWN_WIDTH;
                     }
 
-                    // 3D Bounding Box Collision Check
-                    const dz = Math.abs(cube.position.z - shipGroup.position.z);
+                    // Precision Collision Check (Nose & Wings of Ship vs Cube)
+                    const dz = cube.position.z - shipGroup.position.z;
                     const dx = Math.abs(cube.position.x - shipGroup.position.x);
-                    if (dz < 1.55 && dx < 1.35) {
-                        triggerGameOver();
+
+                    if (dz > -1.85 && dz < 1.35 && dx < 1.28) {
+                        gameOver();
                         break;
                     }
                 }
             } else {
-                // Idle background flyover on title screen
-                gridHelper.position.z = (gridHelper.position.z + 18 * delta) % 4;
+                // Title Screen Background Animation
                 for (let i = 0; i < cubes.length; i++) {
-                    cubes[i].position.z += 18 * delta;
-                    if (cubes[i].position.z > 10) {
-                        cubes[i].position.z = -SPAWN_DEPTH;
+                    const cube = cubes[i].mesh;
+                    cube.position.z += 22 * delta;
+                    if (cube.position.z > 9) {
+                        cube.position.z = -SPAWN_DEPTH;
+                        cube.position.x = (Math.random() - 0.5) * SPAWN_WIDTH;
                     }
                 }
             }
 
-            composer.render();
+            renderer.render(scene, camera);
         }
 
         animate();

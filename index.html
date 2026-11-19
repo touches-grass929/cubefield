@@ -14,7 +14,7 @@
         }
         body {
             overflow: hidden;
-            background-color: #e6e6e6;
+            background-color: #dcdcdc;
             font-family: 'Lexend', sans-serif;
             transition: background-color 0.4s ease;
         }
@@ -33,7 +33,7 @@
             align-items: flex-start;
             pointer-events: none;
             z-index: 10;
-            color: #222222;
+            color: #1a1a1a;
             transition: color 0.4s ease;
         }
         .stat-group {
@@ -76,7 +76,7 @@
             flex-direction: column;
             justify-content: center;
             align-items: center;
-            background: rgba(235, 235, 235, 0.72);
+            background: rgba(235, 235, 235, 0.75);
             backdrop-filter: blur(6px);
             z-index: 20;
             color: #111111;
@@ -101,7 +101,7 @@
             padding: 0 20px;
         }
         #play-btn {
-            background: #ff4500;
+            background: #e62e00;
             color: #ffffff;
             border: 2px solid #111111;
             padding: 14px 46px;
@@ -161,7 +161,7 @@
 
     <div id="overlay">
         <h1 id="title">CUBEFIELD</h1>
-        <p id="subtitle">Dodge the cubes • New level every 1,000 points</p>
+        <p id="subtitle">Dodge the cubes • Speed increases every 1,000 points</p>
         <button id="play-btn">PLAY</button>
         <div class="controls-hint">LEFT / RIGHT ARROWS &nbsp;•&nbsp; A / D &nbsp;•&nbsp; TOUCH SIDES</div>
     </div>
@@ -180,62 +180,62 @@
         const playBtn = document.getElementById('play-btn');
         const hudEl = document.getElementById('hud');
 
-        // Authentic Cubefield Level Palettes (Changes every 1,000 points)
+        // Single Distinct Cube Color Per Level (Changes every 1,000 points)
         const LEVELS = [
-            // Level 1 (0 - 999): Classic Light Gray Sky, White Floor, Yellow/Orange/Red Cubes
+            // Level 1 (0 - 999): Solid Red Cubes on Light Gray
             {
                 sky: 0xdcdcdc,
                 floor: 0xf4f4f4,
-                cubes: [0xffcc00, 0xff6600, 0xe62e00],
+                cube: 0xe62e00,
                 edge: 0x222222,
                 ship: 0x1a1a1a,
                 ui: '#1a1a1a'
             },
-            // Level 2 (1000 - 1999): Dark Night Mode, Neon Lime Green Cubes
+            // Level 2 (1000 - 1999): Solid Neon Green Cubes on Black
             {
                 sky: 0x050505,
                 floor: 0x0a0a0a,
-                cubes: [0x39ff14, 0x00e600, 0x7fff00],
+                cube: 0x39ff14,
                 edge: 0x003300,
                 ship: 0xffffff,
                 ui: '#39ff14'
             },
-            // Level 3 (2000 - 2999): Stark White Out, Pitch Black Cubes
+            // Level 3 (2000 - 2999): Solid Pitch Black Cubes on White
             {
                 sky: 0xffffff,
-                floor: 0xf8f8f8,
-                cubes: [0x111111, 0x262626, 0x000000],
+                floor: 0xf7f7f7,
+                cube: 0x111111,
                 edge: 0x555555,
-                ship: 0xff2a00,
+                ship: 0xe62e00,
                 ui: '#111111'
             },
-            // Level 4 (3000 - 3999): Crimson Red Alert, Dark Cubes
+            // Level 4 (3000 - 3999): Solid Electric Cyan Cubes on Deep Navy
             {
-                sky: 0x1a0000,
-                floor: 0x240000,
-                cubes: [0xff1e1e, 0xcc0000, 0xff5500],
+                sky: 0x071324,
+                floor: 0x0b1c36,
+                cube: 0x00d4ff,
+                edge: 0x020812,
+                ship: 0xffffff,
+                ui: '#00d4ff'
+            },
+            // Level 5 (4000+): Solid Bright Gold Cubes on Dark Charcoal
+            {
+                sky: 0x141414,
+                floor: 0x1c1c1c,
+                cube: 0xffcc00,
                 edge: 0x000000,
                 ship: 0xffffff,
-                ui: '#ff3333'
-            },
-            // Level 5 (4000+): Classic Ice Cyan & Blue
-            {
-                sky: 0x0b192c,
-                floor: 0x102542,
-                cubes: [0x00f0ff, 0x0099ff, 0x70f8ff],
-                edge: 0x040d1a,
-                ship: 0xffcc00,
-                ui: '#00f0ff'
+                ui: '#ffcc00'
             }
         ];
 
         // Scene & Camera Setup
         const scene = new THREE.Scene();
         scene.background = new THREE.Color(LEVELS[0].sky);
-        scene.fog = new THREE.Fog(LEVELS[0].sky, 45, 145);
+        scene.fog = new THREE.Fog(LEVELS[0].sky, 50, 150);
 
-        const camera = new THREE.PerspectiveCamera(62, window.innerWidth / window.innerHeight, 0.1, 160);
-        camera.position.set(0, 2.7, 7.5);
+        const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 165);
+        camera.position.set(0, 2.6, 7.5);
         camera.lookAt(0, 1.0, -25);
 
         const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
@@ -262,10 +262,10 @@
         const shipGroup = new THREE.Group();
         const shipShape = new THREE.BufferGeometry();
         const vertices = new Float32Array([
-             0.0, 0.18, -1.35,  // Nose
-            -0.65, 0.08, 0.75,  // Left wing
-             0.65, 0.08, 0.75,  // Right wing
-             0.0, 0.35,  0.35   // Top ridge
+             0.0, 0.16, -1.25,  // Nose
+            -0.55, 0.08, 0.70,  // Left wing
+             0.55, 0.08, 0.70,  // Right wing
+             0.0, 0.30,  0.30   // Top ridge
         ]);
         const indices = [
             0, 1, 3,
@@ -283,18 +283,18 @@
         shipGroup.position.set(0, 0.15, 0);
         scene.add(shipGroup);
 
-        // Dense Cube Field Pool (Wide spawn so spamming Left/Right never escapes cubes)
-        const CUBE_SIZE = 2.1;
+        // Balanced Cube Field Pool (Fixed count across all levels, open paths)
+        const CUBE_SIZE = 2.0;
         const cubeGeo = new THREE.BoxGeometry(CUBE_SIZE, CUBE_SIZE, CUBE_SIZE);
         const edgesGeo = new THREE.EdgesGeometry(cubeGeo);
 
         const cubes = [];
-        const CUBE_COUNT = 240;      // High density across wide field
-        const SPAWN_WIDTH = 160;     // Very wide lateral field centered on player
-        const SPAWN_DEPTH = 145;     // Horizon spawn distance
+        const CUBE_COUNT = 135;      // Fixed density so paths stay open
+        const SPAWN_WIDTH = 170;     // Wide lateral field
+        const SPAWN_DEPTH = 150;     // Horizon spawn distance
 
         for (let i = 0; i < CUBE_COUNT; i++) {
-            const mat = new THREE.MeshLambertMaterial({ color: LEVELS[0].cubes[i % 3] });
+            const mat = new THREE.MeshLambertMaterial({ color: LEVELS[0].cube });
             const mesh = new THREE.Mesh(cubeGeo, mat);
 
             const lineMat = new THREE.LineBasicMaterial({ color: LEVELS[0].edge });
@@ -304,7 +304,7 @@
             mesh.position.set(
                 (Math.random() - 0.5) * SPAWN_WIDTH,
                 CUBE_SIZE / 2,
-                -25 - Math.random() * SPAWN_DEPTH
+                -30 - Math.random() * SPAWN_DEPTH
             );
             scene.add(mesh);
             cubes.push({ mesh, lineMat });
@@ -317,7 +317,7 @@
         let highScore = Number(localStorage.getItem('cubefield_classic_best')) || 0;
         highscoreEl.textContent = Math.floor(highScore);
 
-        let forwardSpeed = 46;
+        let forwardSpeed = 44;
         let currentSteerSpeed = 0;
         const keys = { left: false, right: false };
         let bannerTimeout = null;
@@ -331,8 +331,8 @@
             hudEl.style.color = palette.ui;
             levelBanner.style.color = palette.ui;
 
-            cubes.forEach((item, idx) => {
-                item.mesh.material.color.setHex(palette.cubes[idx % palette.cubes.length]);
+            cubes.forEach((item) => {
+                item.mesh.material.color.setHex(palette.cube);
                 item.lineMat.color.setHex(palette.edge);
             });
 
@@ -349,7 +349,7 @@
         function startGame() {
             score = 0;
             currentLevel = 1;
-            forwardSpeed = 46;
+            forwardSpeed = 44;
             currentSteerSpeed = 0;
 
             scoreEl.textContent = '0';
@@ -362,10 +362,15 @@
             camera.rotation.z = 0;
             floor.position.x = 0;
 
-            // Reset cubes well ahead of player
+            // Leave a clear runway right in front of the player at start
             cubes.forEach((item) => {
-                item.mesh.position.x = (Math.random() - 0.5) * SPAWN_WIDTH;
-                item.mesh.position.z = -35 - Math.random() * SPAWN_DEPTH;
+                let spawnX = (Math.random() - 0.5) * SPAWN_WIDTH;
+                const spawnZ = -45 - Math.random() * SPAWN_DEPTH;
+                if (spawnZ > -70 && Math.abs(spawnX) < 10) {
+                    spawnX += spawnX >= 0 ? 12 : -12;
+                }
+                item.mesh.position.x = spawnX;
+                item.mesh.position.z = spawnZ;
             });
 
             isPlaying = true;
@@ -385,7 +390,7 @@
             overlay.classList.remove('hidden');
         }
 
-        // Responsive Input Listeners
+        // Input Listeners
         window.addEventListener('keydown', (e) => {
             if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') keys.left = true;
             if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') keys.right = true;
@@ -426,57 +431,56 @@
             const delta = Math.min(clock.getDelta(), 0.05);
 
             if (isPlaying) {
-                // Score & Speed Progression (100 points per ~1.5 seconds)
-                forwardSpeed += delta * 1.35;
+                // Score Progression (Gradual acceleration within level, speed jump on level-up)
+                forwardSpeed += delta * 0.75;
                 score += forwardSpeed * delta * 1.45;
                 const displayScore = Math.floor(score);
                 scoreEl.textContent = displayScore;
 
-                // Level Up Every 1,000 Points
+                // Level Up Every 1,000 Points (Increases speed, keeps cube count fixed)
                 const calculatedLevel = Math.floor(displayScore / 1000) + 1;
                 if (calculatedLevel > currentLevel) {
                     currentLevel = calculatedLevel;
                     levelEl.textContent = currentLevel;
-                    forwardSpeed += 4; // Noticeable speed bump on new level
+                    forwardSpeed += 9.5; // Distinct speed boost per level
                     applyLevelTheme(currentLevel, true);
                 }
 
-                // Instant, Snappy Steering (No sluggish drift)
-                const maxSteer = 42 + (currentLevel * 2.5);
+                // Balanced, Fluid Steering (Not overly twitchy, not sluggish)
+                const maxSteer = 34 + (currentLevel * 2.2);
                 let targetSteer = 0;
                 if (keys.left) targetSteer -= maxSteer;
                 if (keys.right) targetSteer += maxSteer;
 
-                // Ultra-fast response (snaps immediately when key is pressed or released)
-                currentSteerSpeed += (targetSteer - currentSteerSpeed) * Math.min(1, delta * 28);
+                // Smooth 14x interpolation gives natural weight without input lag
+                currentSteerSpeed += (targetSteer - currentSteerSpeed) * Math.min(1, delta * 14);
                 shipGroup.position.x += currentSteerSpeed * delta;
                 floor.position.x = shipGroup.position.x;
 
-                // Crisp Ship & Camera Banking
-                const targetBank = -(currentSteerSpeed / maxSteer) * 0.42;
-                shipGroup.rotation.z += (targetBank - shipGroup.rotation.z) * Math.min(1, delta * 22);
+                // Smooth Ship & Camera Banking
+                const targetBank = -(currentSteerSpeed / maxSteer) * 0.36;
+                shipGroup.rotation.z += (targetBank - shipGroup.rotation.z) * Math.min(1, delta * 13);
                 camera.position.x = shipGroup.position.x;
-                camera.rotation.z = shipGroup.rotation.z * 0.35;
+                camera.rotation.z = shipGroup.rotation.z * 0.3;
 
-                // Move Cubes & Recycle Relative to Player's Future Path
-                // Lead offset ensures even if you hold Left/Right nonstop, cubes spawn directly ahead of your turn
-                const pathLeadOffset = currentSteerSpeed * 1.4;
+                // Move Cubes & Recycle Ahead of Player's Trajectory
+                const pathLeadOffset = currentSteerSpeed * 1.35;
 
                 for (let i = 0; i < cubes.length; i++) {
                     const cube = cubes[i].mesh;
                     cube.position.z += forwardSpeed * delta;
 
-                    // Recycle passed cubes or cubes that drifted too far sideways
-                    if (cube.position.z > 9 || Math.abs(cube.position.x - shipGroup.position.x) > SPAWN_WIDTH * 0.65) {
+                    // Recycle passed cubes or cubes far off-screen
+                    if (cube.position.z > 9 || Math.abs(cube.position.x - shipGroup.position.x) > SPAWN_WIDTH * 0.6) {
                         cube.position.z = -SPAWN_DEPTH - Math.random() * 25;
                         cube.position.x = shipGroup.position.x + pathLeadOffset + (Math.random() - 0.5) * SPAWN_WIDTH;
                     }
 
-                    // Precision Collision Check (Nose & Wings of Ship vs Cube)
+                    // Tight, Forgiving Hitbox (Matches visual ship tip and narrow body)
                     const dz = cube.position.z - shipGroup.position.z;
                     const dx = Math.abs(cube.position.x - shipGroup.position.x);
 
-                    if (dz > -1.85 && dz < 1.35 && dx < 1.28) {
+                    if (dz > -1.35 && dz < 0.85 && dx < 0.88) {
                         gameOver();
                         break;
                     }
@@ -485,7 +489,7 @@
                 // Title Screen Background Animation
                 for (let i = 0; i < cubes.length; i++) {
                     const cube = cubes[i].mesh;
-                    cube.position.z += 22 * delta;
+                    cube.position.z += 20 * delta;
                     if (cube.position.z > 9) {
                         cube.position.z = -SPAWN_DEPTH;
                         cube.position.x = (Math.random() - 0.5) * SPAWN_WIDTH;
